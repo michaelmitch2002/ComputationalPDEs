@@ -4,10 +4,6 @@ clear all;
 close all;
 clc;
 
-u_0 = -1;
-u_1 = 1/2;
-err = 10^(-8);
-
 %% Jacobian Function
 function J = Jacobian(u, A1, A2, w2, N)
     Bout = spdiags(A1, [-3 -2 -1 0 1 2 3]) ...
@@ -90,7 +86,13 @@ end
 
 %% Q1: 
 
-eta_opt = [.1, 0.01, 0.001, 0.0001];
+u_0 = -1;
+u_1 = 1/2;
+tol = 10^(-8);
+eta_opt = [.1, 0.01, 0.001];
+N_truth = 200001;
+N_array = [301, 401, 501, 1001];
+err = zeros(length(eta_opt), length(N_array), 2)
 figure (1)
 hold on
 figure (2)
@@ -99,14 +101,17 @@ figure (3)
 hold on
 
 for i = 1:length(eta_opt)
-    eta = eta_opt(i);
 
-    N_truth = 80001;
-    N = 8001;
+    [x_truth, u_truth, iter] = sol(N_truth, eta_opt(i), tol, u_0, u_1, 4);
+    ind_truth = x_truth == 0.72  | x_truth == 0.75;
 
-    [x_truth, u_truth, iter] = sol(N_truth, eta, err, u_0, u_1, 4);
-    [x, u_2, iter] = sol(N, eta, err, u_0, u_1, 2);
-    [x, u_4, iter] = sol(N, eta, err, u_0, u_1, 4);
+    for j = 1:length(N_array)
+        [x, u_2, iter] = sol(N_array(j), eta_opt(i), tol, u_0, u_1, 2);
+        [x, u_4, iter] = sol(N_array(j), eta_opt(i), tol, u_0, u_1, 4);
+        ind = x == 0.72  | x == 0.75;
+        err(i, j, 1) = sum((u_2(ind) - u_truth(ind_truth)).^2);
+        err(i, j, 2) = sum((u_4(ind) - u_truth(ind_truth)).^2);
+    end
 
     figure (1)
     plot(x, u_2, 'LineWidth', 1)
@@ -115,6 +120,12 @@ for i = 1:length(eta_opt)
     figure (3)
     plot(x_truth, u_truth, 'LineWidth', 1)
 end
- 
+figure (4)
+hold on 
+loglog(1./(N_array - 1), err(3, :, 1), 'g',  'LineWidth', 1)
+figure(5)
+hold on
+loglog(1./(N_array - 1), err(3, :, 2), 'r', 'LineWidth', 1)
+
 
 
